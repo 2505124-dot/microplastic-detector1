@@ -14,13 +14,30 @@ st.set_page_config(
 
 st.title("🔬 Microplastic Screening Detector")
 
-st.write(
-    "ही प्रणाली microscope image मधील संभाव्य particles शोधते. "
-    "हा laboratory-confirmed microplastic test नाही."
+st.caption(
+    "Image-based particle screening | USB microscope support can be added later"
 )
 
 
+with st.expander("About this project"):
+
+    st.write(
+        "हे software microscope image मधील संभाव्य particles "
+        "OpenCV image processing वापरून शोधते."
+    )
+
+    st.write(
+        "USB microscope नसतानाही तुम्ही existing image upload करू शकता "
+        "किंवा laptop/mobile cameraने photo घेऊ शकता."
+    )
+
+    st.warning(
+        "हा laboratory-confirmed microplastic test नाही."
+    )
+
+
 st.sidebar.header("Sample Information")
+
 
 sample_type = st.sidebar.selectbox(
     "Water sample type निवडा",
@@ -33,13 +50,46 @@ sample_type = st.sidebar.selectbox(
     ]
 )
 
+
 sample_location = st.sidebar.text_input(
     "Sample location लिहा",
     placeholder="उदा. Ratnagiri"
 )
 
 
+st.sidebar.header("Image Source")
+
+
+input_method = st.sidebar.radio(
+    "Image कशी घ्यायची?",
+    [
+        "Upload existing image",
+        "Take photo using camera"
+    ]
+)
+
+
+uploaded_file = None
+
+
+if input_method == "Upload existing image":
+
+    uploaded_file = st.file_uploader(
+        "Microscope image upload करा",
+        type=["jpg", "jpeg", "png"]
+    )
+
+
+else:
+
+    uploaded_file = st.camera_input(
+        "Laptop/mobile camera किंवा नंतर USB microscope मधून photo घ्या",
+        resolution="720p"
+    )
+
+
 st.sidebar.header("Detection Settings")
+
 
 threshold_value = st.sidebar.slider(
     "Threshold value",
@@ -48,12 +98,14 @@ threshold_value = st.sidebar.slider(
     value=180
 )
 
+
 min_area = st.sidebar.slider(
     "Minimum particle area",
     min_value=5,
     max_value=500,
     value=50
 )
+
 
 max_area = st.sidebar.slider(
     "Maximum particle area",
@@ -63,30 +115,26 @@ max_area = st.sidebar.slider(
 )
 
 
-uploaded_file = st.file_uploader(
-    "Microscope image upload करा",
-    type=["jpg", "jpeg", "png"]
-)
-
-
 analyze_button = st.button(
-    "🔍 Analyze Image"
+    "🔍 Analyze Image",
+    type="primary"
 )
 
 
 if uploaded_file is None:
 
     st.info(
-        "Analysis सुरू करण्यासाठी JPG किंवा PNG image upload करा."
+        "Analysis सुरू करण्यासाठी image upload करा "
+        "किंवा cameraने photo घ्या."
     )
 
     st.markdown(
         """
         ### वापरण्याची पद्धत
 
-        1. Water sample type निवडा.
-        2. Sample location लिहा.
-        3. JPG किंवा PNG microscope image upload करा.
+        1. Sample type निवडा.
+        2. Location लिहा.
+        3. Existing image upload करा किंवा cameraने photo घ्या.
         4. `Analyze Image` button दाबा.
         5. Result आणि report download करा.
         """
@@ -98,7 +146,7 @@ if uploaded_file is None:
 if not analyze_button:
 
     st.info(
-        "Image upload झाली आहे. Analysis सुरू करण्यासाठी "
+        "Image तयार आहे. Analysis सुरू करण्यासाठी "
         "`Analyze Image` button दाबा."
     )
 
@@ -125,7 +173,7 @@ image = cv2.imdecode(
 if image is None:
 
     st.error(
-        "Image read झाली नाही. JPG किंवा PNG image वापरून पुन्हा प्रयत्न करा."
+        "Image read झाली नाही. Valid JPG किंवा PNG image वापरा."
     )
 
     st.stop()
@@ -179,6 +227,14 @@ contours, _ = cv2.findContours(
     cv2.RETR_EXTERNAL,
     cv2.CHAIN_APPROX_SIMPLE
 )
+
+
+if len(contours) == 0:
+
+    st.warning(
+        "Imageमध्ये contours सापडले नाहीत. "
+        "Threshold किंवा area settings बदला."
+    )
 
 
 result = image.copy()
@@ -323,7 +379,7 @@ with tab2:
 
     st.image(
         threshold,
-        caption="Processed threshold image",
+        caption="Black-and-white threshold image used for detection",
         use_container_width=True
     )
 
@@ -351,7 +407,7 @@ with tab3:
     else:
 
         st.info(
-            "या settings मध्ये कोणतेही possible particles सापडले नाहीत."
+            "या settingsमध्ये कोणतेही possible particles सापडले नाहीत."
         )
 
 
